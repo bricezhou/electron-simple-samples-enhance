@@ -1,17 +1,16 @@
-const {app, BrowserWindow} = require('electron')
+const {app, BrowserWindow } = require('electron')
 const path = require('path')
 const url = require('url')
 
 let window = null
-
 // Wait until the app is ready
 app.once('ready', () => {
   // Create a new window
   window = new BrowserWindow({
     // Set the initial width to 500px
-    width: 500,
+    width: 800,
     // Set the initial height to 400px
-    height: 400,
+    height: 600,
     // set the title bar style
     titleBarStyle: 'hiddenInset',
     // set the background color to black
@@ -29,4 +28,5 @@ app.once('ready', () => {
   window.once('ready-to-show', () => {
     window.show()
   })
+  window.webContents.openDevTools()
 })

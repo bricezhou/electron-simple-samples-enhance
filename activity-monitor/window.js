@@ -1,5 +1,9 @@
 const os = require('os')
+const fs = require('fs')
+const { remote, clipboard, nativeImage } = require('electron')
+const { dialog} = remote
 var chart = null;
+var memoryChart = null
 var lastMeasureTimes = [];
 
 function setLastMeasureTimes(cpus) {
@@ -81,7 +85,108 @@ function drawChart() {
   setInterval(updateDatasets, 1000);
 }
 
+function drawMemoryChart() {
+  memoryChart = new Chart($('.memory-chart'), {
+    type: 'doughnut',
+    data: {
+      labels: [
+        'Free Memory (MB)',
+        'Used Memory (MB)',
+      ],
+      datasets: getMemoryDatasets()
+    },
+    options: {
+      maintainAspectRatio: false,
+      title: {
+        display: true,
+        text: 'Memory Activity',
+        fontColor: 'rgb(250, 250, 250)',
+        fontSize: 16
+      },
+      legend: {
+        display: true,
+        labels: {
+          fontColor: 'rgb(250, 250, 250)',
+          fontSize: 12
+        }
+      }
+    }
+  });
+
+  setInterval(updateMemoryDatasets, 1000);
+}
+
+  function getMemoryDatasets() {
+    const datasets = []
+    const memoryUsage = process.getSystemMemoryInfo();
+    const memoryDate = {
+      data: getMemoryUsage(),
+      backgroundColor: [
+        'rgba(255, 99, 132, 1)',
+        'rgba(54, 162, 235, 1)',
+      ]
+    }
+    datasets.push(memoryDate)
+    return datasets
+  }
+  function getMemoryUsage() {
+    const memoryUsage = process.getSystemMemoryInfo()
+    const freeMB = (memoryUsage.free/1024).toFixed(2)
+    const usedMB = ((memoryUsage.total - memoryUsage.free)/1024).toFixed(2)
+    return [freeMB, usedMB]
+  }
+  function updateMemoryDatasets() {
+    memoryChart.data.datasets[0].data = getMemoryUsage()
+    memoryChart.update();
+  }
+
 $(() => {
   setLastMeasureTimes(os.cpus());
+  drawMemoryChart()
   drawChart();
+  $('#saveNative').click((e)=> {
+      dialog.showSaveDialog(
+        remote.getCurrentWindow(), 
+        {
+        title: 'Save Image',
+        buttonLabel: 'Save',
+        showsTagField: true
+      }, (fileName) => {
+        $('.chart').get(0).toBlob(blob => {
+            const fileReader = new FileReader()
+            fileReader.onloadend = ()=> {
+                fs.writeFile(fileName, new Uint8Array(fileReader.result), (err) => {
+                    if (err) {
+                        console.log('Save image error' + err.message)
+                    }
+                    console.log('Save file successfully!')
+                })
+            }
+            fileReader.readAsArrayBuffer(blob)
+        });
+      })
+  })
+  $('#copyImage').click((e) => {
+        const dateUrl = $('.chart').get(0).toDataURL('image/png')
+        const img = nativeImage.createFromDataURL(dateUrl)
+        clipboard.writeImage(img, 'PNG')
+  })
 })
+
+
+function download1(){
+  var download = document.getElementById("download_link");
+  var image = $('.chart').get(0).toDataURL('image/png').replace("image/png", "image/octet-stream");
+  download.setAttribute("href", image);
+}
+function downloadCSV () {
+  const cpus = os.cpus()
+  let csvData = 'data:application/csv;charset=utf-8,CPU Number,User Time (ms),System Time (ms),Idle Time (ms)\r\n'
+  cpus.forEach((cpu, index) => {
+      const cpuData = getCpuTimes(cpu)
+      const row = ++index + ',' + cpuData.join(',') + '\r\n'
+      csvData += row
+  })
+  var download = document.getElementById("download_csv");
+  download.setAttribute("href", encodeURIComponent(csvData));
+}

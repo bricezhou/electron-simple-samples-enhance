@@ -27,6 +27,19 @@
     <canvas class="chart"></canvas>
   </div>
 
+  <div class="container-fluid">
+    <canvas class="memory-chart"></canvas>
+  </div>
+
+  <div style="padding: 5px 20px;">
+        <a href="#" id="download_link" onclick="download1()" download="CPU.png">Export CPU Chart Image</a>
+        <a href="#" id="download_csv" onclick="downloadCSV()" download="CPU.csv">Export CPU Time CSV</a>
+  </div>
+
+  <div style="padding: 5px 20px;">
+      <button id="saveNative">Save CPU Image</button>
+      <button id="copyImage">Copy CPU Image</button>
+  </div>
 </body>
 
 </html>
